@@ -5,7 +5,7 @@ from .models import Profile, Post
 class ProfileListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
-        fields = ["username", "profile_picture"]
+        fields = ["id", "username", "profile_picture"]
 
 
 class ProfileDetailSerializer(serializers.ModelSerializer):
@@ -13,7 +13,8 @@ class ProfileDetailSerializer(serializers.ModelSerializer):
         model = Profile
         fields = [
             "username",
-            "first_name",
+            "email"
+            "name",
             "last_name",
             "profile_picture",
             "bio",
@@ -26,7 +27,7 @@ class OwnerSerializer(serializers.ModelSerializer):
         model = Profile
         fields = [
             "username",
-            "first_name",
+            "name",
             "last_name",
             "profile_picture",
             "bio",
