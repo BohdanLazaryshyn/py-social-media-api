@@ -26,6 +26,13 @@ class Profile(models.Model):
         return self.username
 
 
+class Tag(models.Model):
+    tag = models.CharField(max_length=100, blank=True)
+    post = models.ManyToManyField("Post", related_name="tags")
+
+    def __str__(self):
+        return self.tag
+
 
 class Post(models.Model):
     text = models.TextField(max_length=500)
