@@ -2,10 +2,36 @@ from rest_framework import serializers
 from .models import Profile, Post
 
 
-class ProfileSerializer(serializers.ModelSerializer):
+class ProfileListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
-        fields = "__all__"
+        fields = ["username", "profile_picture"]
+
+
+class ProfileDetailSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Profile
+        fields = [
+            "username",
+            "first_name",
+            "last_name",
+            "profile_picture",
+            "bio",
+            "birth_date",
+        ]
+
+
+class OwnerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Profile
+        fields = [
+            "username",
+            "first_name",
+            "last_name",
+            "profile_picture",
+            "bio",
+            "birth_date",
+        ]
 
 
 class PostSerializer(serializers.ModelSerializer):
