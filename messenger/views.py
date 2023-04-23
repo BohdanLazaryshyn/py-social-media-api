@@ -66,7 +66,7 @@ class OwnerPageView(
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class ProfileListView(generics.ListAPIView):
+class ProfileViewSet(ModelViewSet):
     queryset = Profile.objects.all()
     serializer_class = ProfileListSerializer
     permission_classes = [IsAuthenticatedReadOnly]
@@ -81,19 +81,68 @@ class ProfileListView(generics.ListAPIView):
     ]
 
     def get_queryset(self):
-        queryset = Profile.objects.all()
+        queryset = self.queryset.all()
         if self.request.user.is_authenticated:
             queryset = queryset.exclude(user=self.request.user)
+        if self.action == "followers":
+            queryset = self.queryset.filter(following=self.request.user.profile)
+        if self.action == "following":
+            queryset = self.queryset.filter(followers=self.request.user.profile)
         return queryset
 
+    def get_serializer_class(self):
+        if self.action == "list":
+            return ProfileListSerializer
+        if self.action == "retrieve":
+            return ProfileDetailSerializer
+        return self.serializer_class
 
-class ProfileDetailView(generics.RetrieveAPIView):
-    queryset = Profile.objects.all()
-    permission_classes = [IsAuthenticatedReadOnly]
-    serializer_class = ProfileDetailSerializer
+    def get_object(self):
+        queryset = self.get_queryset()
+        obj = get_object_or_404(queryset, username=self.kwargs["username"])
+        self.check_object_permissions(self.request, obj)
+        return obj
 
-    def get_queryset(self):
-        return self.queryset.exclude(user=self.request.user)
+    @action(detail=False, methods=["get"], url_path="my_posts")
+    def followers(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=["get"], url_path="followers_posts")
+    def following(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+# class ProfileListView(generics.ListAPIView):
+#     queryset = Profile.objects.all()
+#     serializer_class = ProfileListSerializer
+#     permission_classes = [IsAuthenticatedReadOnly]
+#     pagination_class = PageNumberPaginationWithSize
+#     filter_backends = [filters.SearchFilter]
+#     search_fields = [
+#         "username",
+#         "name",
+#         "last_name",
+#         "birth_date",
+#         "user__email",
+#     ]
+#
+#     def get_queryset(self):
+#         queryset = Profile.objects.all()
+#         if self.request.user.is_authenticated:
+#             queryset = queryset.exclude(user=self.request.user)
+#         return queryset
+#
+#
+# class ProfileDetailView(generics.RetrieveAPIView):
+#     queryset = Profile.objects.all()
+#     permission_classes = [IsAuthenticatedReadOnly]
+#     serializer_class = ProfileDetailSerializer
+#
+#     def get_queryset(self):
+#         return self.queryset.exclude(user=self.request.user)
 
 
 class ProfileFollowView(generics.GenericAPIView):

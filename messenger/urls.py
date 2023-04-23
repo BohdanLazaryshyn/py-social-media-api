@@ -4,18 +4,21 @@ from rest_framework import routers
 from messenger.views import (
     PostViewSet,
     OwnerPageView,
-    ProfileListView,
-    ProfileDetailView, ProfileFollowView,
+    # ProfileListView,
+    # ProfileDetailView,
+    ProfileFollowView,
+    ProfileViewSet,
 )
 
 router = routers.DefaultRouter()
 router.register("posts", PostViewSet)
+router.register("profiles", ProfileViewSet)
 
 app_name = "messenger"
 
 urlpatterns = [
-    path("profiles/", ProfileListView.as_view(), name="profiles_list"),
-    path("profiles/<int:pk>/", ProfileDetailView.as_view(), name="profile_detail"),
+    # path("profiles/", ProfileListView.as_view(), name="profiles_list"),
+    # path("profiles/<int:pk>/", ProfileDetailView.as_view(), name="profile_detail"),
     path("", include(router.urls)),
     path("<str:username>/", OwnerPageView.as_view({
         "get": "retrieve",
