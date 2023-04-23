@@ -5,8 +5,7 @@ from messenger.views import (
     PostViewSet,
     OwnerPageView,
     ProfileListView,
-    ProfileDetailView,
-    # PostListView, PostDetailView,
+    ProfileDetailView, ProfileFollowView,
 )
 
 router = routers.DefaultRouter()
@@ -17,15 +16,16 @@ app_name = "messenger"
 urlpatterns = [
     path("profiles/", ProfileListView.as_view(), name="profiles_list"),
     path("profiles/<int:pk>/", ProfileDetailView.as_view(), name="profile_detail"),
-
-    path("owner/", OwnerPageView.as_view({
-        "get": "list",
-    }, name="owner")),
-    path("owner/<str:username>/", OwnerPageView.as_view({
+    path("", include(router.urls)),
+    path("<str:username>/", OwnerPageView.as_view({
         "get": "retrieve",
         "put": "update",
         "patch": "partial_update",
         "delete": "destroy",
         }), name="owner-page"),
-    path("", include(router.urls)),
+    path(
+        "profiles/<int:pk>/follow/",
+        ProfileFollowView.as_view(),
+        name="profile_follow",
+    ),
 ]

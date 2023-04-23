@@ -21,11 +21,22 @@ class Profile(models.Model):
     last_name = models.CharField(max_length=100)
     bio = models.TextField(max_length=500, blank=True)
     birth_date = models.DateField(null=True, blank=True)
-    profile_picture = models.ImageField(upload_to=image_file_path, blank=True, null=True)
+    profile_picture = models.ImageField(
+        upload_to=image_file_path, blank=True, null=True
+    )
+    followers = models.ManyToManyField(
+        "self", related_name="following", symmetrical=False
+    )
 
     @property
     def full_name(self):
         return f"{self.name} {self.last_name}"
+
+    def toggle_follow(self, profile):
+        if profile in self.followers.all():
+            profile.followers.remove(self)
+        else:
+            profile.followers.add(self)
 
     def __str__(self):
         return self.username
