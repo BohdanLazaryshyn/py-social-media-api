@@ -23,23 +23,35 @@ class Profile(models.Model):
     birth_date = models.DateField(null=True, blank=True)
     profile_picture = models.ImageField(upload_to=image_file_path, blank=True, null=True)
 
+    @property
+    def full_name(self):
+        return f"{self.name} {self.last_name}"
+
     def __str__(self):
         return self.username
 
 
 class Tag(models.Model):
-    tag = models.CharField(max_length=100, blank=True)
+    tag = models.CharField(max_length=100, unique=True)
 
     def __str__(self):
         return self.tag
 
 
 class Post(models.Model):
+    TEXT_PREVIEW_LENGTH = 20
+
     text = models.TextField(max_length=500)
     tags = models.ManyToManyField(Tag, related_name="tags")
     author = models.ForeignKey(Profile, on_delete=models.CASCADE, related_name="posts")
     created_at = models.DateTimeField(auto_now_add=True)
     post_picture = models.ImageField(upload_to=image_file_path, blank=True, null=True)
+
+    @property
+    def text_preview(self):
+        if len(self.text) <= self.TEXT_PREVIEW_LENGTH:
+            return self.text
+        return self.text[:self.TEXT_PREVIEW_LENGTH] + "..."
 
     def __str__(self):
         return self.text

@@ -1,11 +1,20 @@
+from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
-from rest_framework import mixins, generics, filters
+from rest_framework import mixins, generics, filters, status, permissions
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
+from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 
 from .models import Profile, Post
-from .serializers import ProfileListSerializer, PostSerializer, ProfileDetailSerializer, OwnerSerializer
+from .permissions import IsOwnerOrReadOnly
+from .serializers import \
+    ProfileListSerializer, \
+    PostSerializer, \
+    ProfileDetailSerializer, \
+    OwnerSerializer, \
+    PostListSerializer, \
+    PostDetailSerializer
 
 
 class PageNumberPaginationWithSize(PageNumberPagination):
@@ -14,6 +23,7 @@ class PageNumberPaginationWithSize(PageNumberPagination):
 
 
 class OwnerPageView(
+    mixins.ListModelMixin,
     mixins.RetrieveModelMixin,
     mixins.UpdateModelMixin,
     mixins.DestroyModelMixin,
@@ -28,6 +38,12 @@ class OwnerPageView(
         obj = get_object_or_404(queryset, username=self.kwargs["username"])
         self.check_object_permissions(self.request, obj)
         return obj
+
+    def perform_destroy(self, instance):
+        user = get_object_or_404(get_user_model(), id=self.request.user.id)
+        user.delete()
+        instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ProfileListView(generics.ListAPIView):
@@ -51,12 +67,15 @@ class ProfileListView(generics.ListAPIView):
                 queryset = queryset.exclude(user=self.request.user)
             return queryset
         else:
+            queryset = Profile.objects.all()
             profile = Profile.objects.create(
                 user=self.request.user,
                 username=self.request.user.username,
                 email=self.request.user.email
             )
-            return [profile]
+            profile.save()
+            queryset = queryset.exclude(user=self.request.user)
+        return queryset
 
 
 class ProfileDetailView(generics.RetrieveAPIView):
@@ -68,7 +87,40 @@ class ProfileDetailView(generics.RetrieveAPIView):
 
 
 class PostViewSet(ModelViewSet):
-    queryset = Post.objects.all()
+    queryset = Post.objects.prefetch_related("tags", "author")
     serializer_class = PostSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
     pagination_class = PageNumberPaginationWithSize
+    filter_backends = [filters.SearchFilter]
+    search_fields = ["text", "author__username", "tags__tag"]
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user.profile)
+
+    def get_serializer_class(self):
+        if self.action == "list":
+            return PostListSerializer
+        if self.action == "retrieve":
+            return PostDetailSerializer
+        # if self.action == "update" or self.action == "partial_update" or self.action == "delete":
+        #     return PostSerializer
+
+        return self.serializer_class
+#
+# class PostListView(generics.ListCreateAPIView):
+#     queryset = Post.objects.prefetch_related("tags", "author")
+#     serializer_class = PostSerializer
+#     permission_classes = [IsAuthenticatedOrReadOnly]
+#     pagination_class = PageNumberPaginationWithSize
+#     filter_backends = [filters.SearchFilter]
+#     search_fields = ["text", "author__username", "tags__tag"]
+#
+#     def perform_create(self, serializer):
+#         serializer.save(author=self.request.user.profile)
+#
+#
+# class PostDetailView(generics.RetrieveUpdateDestroyAPIView):
+#     queryset = Post.objects.prefetch_related("tags", "author")
+#     serializer_class = PostDetailSerializer
+#     permission_classes = [IsOwnerOrReadOnly]
+

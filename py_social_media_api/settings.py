@@ -31,6 +31,8 @@ INTERNAL_IPS = [
     "127.0.0.1",
 ]
 
+BASE_URL = "http://127.0.0.1:8000/api/messenger/"
+
 
 # Application definition
 
