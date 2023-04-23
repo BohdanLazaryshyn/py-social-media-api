@@ -9,8 +9,10 @@ from user.models import User
 
 def image_file_path(instance, filename):
     _, ext = os.path.splitext(filename)
-    filename = f"{slugify(instance.username)}-{uuid.uuid4()}"
-    return os.path.join("uploads/", filename + ext)
+    if ext in (".jpeg", ".jpg", ".png"):
+        filename = f"{slugify(instance.username)}-{uuid.uuid4()}"
+        return os.path.join("uploads/", filename + ext)
+    raise ValueError("Unsupported file type")
 
 
 class Profile(models.Model):

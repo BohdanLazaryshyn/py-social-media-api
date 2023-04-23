@@ -1,6 +1,5 @@
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import mixins, generics, filters, status
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
@@ -9,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 
 from .models import Profile, Post
-from .permissions import IsOwnerOrReadOnly, IsAuthenticatedReadOnly
+from .permissions import IsOwnerOrReadOnly, IsOwner
 from .serializers import (
     ProfileListSerializer,
     PostSerializer,
@@ -34,7 +33,7 @@ class OwnerPageView(
 ):
     queryset = Profile.objects.all()
     serializer_class = OwnerSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsOwner]
     lookup_field = "username"
 
     def get_queryset(self):
@@ -69,7 +68,7 @@ class OwnerPageView(
 class ProfileViewSet(ModelViewSet):
     queryset = Profile.objects.all()
     serializer_class = ProfileListSerializer
-    permission_classes = [IsAuthenticatedReadOnly]
+    permission_classes = [IsOwnerOrReadOnly]
     pagination_class = PageNumberPaginationWithSize
     filter_backends = [filters.SearchFilter]
     search_fields = [
@@ -114,35 +113,6 @@ class ProfileViewSet(ModelViewSet):
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
-
-# class ProfileListView(generics.ListAPIView):
-#     queryset = Profile.objects.all()
-#     serializer_class = ProfileListSerializer
-#     permission_classes = [IsAuthenticatedReadOnly]
-#     pagination_class = PageNumberPaginationWithSize
-#     filter_backends = [filters.SearchFilter]
-#     search_fields = [
-#         "username",
-#         "name",
-#         "last_name",
-#         "birth_date",
-#         "user__email",
-#     ]
-#
-#     def get_queryset(self):
-#         queryset = Profile.objects.all()
-#         if self.request.user.is_authenticated:
-#             queryset = queryset.exclude(user=self.request.user)
-#         return queryset
-#
-#
-# class ProfileDetailView(generics.RetrieveAPIView):
-#     queryset = Profile.objects.all()
-#     permission_classes = [IsAuthenticatedReadOnly]
-#     serializer_class = ProfileDetailSerializer
-#
-#     def get_queryset(self):
-#         return self.queryset.exclude(user=self.request.user)
 
 
 class ProfileFollowView(generics.GenericAPIView):
@@ -208,15 +178,3 @@ class PostViewSet(ModelViewSet):
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
-
-    @extend_schema(
-        parameters=[
-            OpenApiParameter(
-                "hashtags",
-                type={"type": "list", "items": {"type": "number"}},
-                description="Filter by hashtag id (ex. ?hashtags=2,5)",
-            )
-        ]
-    )
-    def list(self, request, *args, **kwargs):
-        return super().list(request, *args, **kwargs)
